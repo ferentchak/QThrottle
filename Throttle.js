@@ -8,22 +8,31 @@ module.exports = function(values,max,iterator){
   var deferred = Q.defer();
   var list = _.clone(values).reverse();
   var outstanding = 0;
+
   function catchingFunction(value){
     deferred.notify(value);
     outstanding--;
     if(list.length){
       outstanding++;
       iterator(list.pop())
-      .then(catchingFunction);
+      .then(catchingFunction)
+      .fail(rejectFunction);
     }
     else if(outstanding===0){
       deferred.resolve();
     }
   }
+
+  function rejectFunction(err) {
+    deferred.reject(err);
+  }
+
   while(max-- && list.length){
     iterator(list.pop())
-    .then(catchingFunction);
+    .then(catchingFunction)
+    .fail(rejectFunction);
     outstanding++;
   }
+
   return deferred.promise;
 };
